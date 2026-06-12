@@ -1,1 +1,0 @@
-function t(e){const r=Number(e??0);return new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(r)}function n(){const e=new Date,r=e.getMonth()>=5?e.getFullYear():e.getFullYear()-1;return`${r}-${String(r+1).slice(-2)}`}export{n as c,t as i};
