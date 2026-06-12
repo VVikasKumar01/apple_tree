@@ -14,6 +14,9 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
+    ssr: {
+      noExternal: ["tslib"],
+    },
     build: {
       chunkSizeWarningLimit: 1000,
     },
