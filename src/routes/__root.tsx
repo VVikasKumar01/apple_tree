@@ -6,6 +6,8 @@ import { AuthProvider } from "@/lib/auth";
 import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 
+import { ErrorComponent } from "@tanstack/react-router";
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
@@ -18,6 +20,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   }),
   shellComponent: RootShell,
   component: RootComponent,
+  errorComponent: ({ error }) => {
+    console.error("Root error:", error);
+    return (
+      <div className="p-4 text-red-500">
+        <h1 className="text-2xl font-bold">App Error</h1>
+        <pre className="mt-4 whitespace-pre-wrap bg-gray-100 p-4 text-sm text-black">
+          {error.message || String(error)}
+          {"\n\n"}
+          {error.stack}
+        </pre>
+      </div>
+    );
+  },
 });
 
 function RootShell({ children }: { children: React.ReactNode }) {
