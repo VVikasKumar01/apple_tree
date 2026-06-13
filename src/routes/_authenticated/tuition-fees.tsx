@@ -14,9 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { exportToExcel } from "@/lib/excel";
 import { parseDataFile, normalizeRow } from "@/lib/import";
 import { toast } from "sonner";
-import { inr, currentAcademicYear } from "@/lib/types";
+import { inr } from "@/lib/types";
 import { CLASS_OPTIONS, GENDER_OPTIONS } from "@/lib/constants";
 import { useAuth } from "@/lib/auth";
+import { useAcademicYear } from "@/lib/academic-year";
 
 export const Route = createFileRoute("/_authenticated/tuition-fees")({ component: TuitionPage });
 
@@ -25,7 +26,7 @@ type PayStatus = "all" | "fully" | "partial" | "unpaid";
 function TuitionPage() {
   const qc = useQueryClient();
   const { school } = useAuth();
-  const year = currentAcademicYear();
+  const { year } = useAcademicYear();
   const [editing, setEditing] = useState<any | null>(null);
   const [q, setQ] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
@@ -34,10 +35,11 @@ function TuitionPage() {
   const importRef = useRef<HTMLInputElement>(null);
 
   const { data: rows = [] } = useQuery({
-    queryKey: ["tuition", year],
+    queryKey: ["tuition", year, school],
+    enabled: !!school,
     queryFn: async () => {
-      const { data: students } = await supabase.from("students").select("id,admission_number,student_name,class_grade,section,gender");
-      const { data: fees } = await supabase.from("tuition_fees").select("*").eq("academic_year", year);
+      const { data: students } = await supabase.from("students").select("id,admission_number,student_name,class_grade,section,gender").eq("academic_year", year).eq("school", school);
+      const { data: fees } = await supabase.from("tuition_fees").select("*").eq("academic_year", year).eq("school", school);
       const fmap = new Map((fees ?? []).map((f: any) => [f.student_id, f]));
       return (students ?? []).map((s: any) => ({ student: s, fee: fmap.get(s.id) ?? null }));
     },

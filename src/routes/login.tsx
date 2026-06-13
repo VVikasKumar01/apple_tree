@@ -1,20 +1,24 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { School, Loader2, TreeDeciduous, Sparkles } from "lucide-react";
+import { School, Loader2, Eye, EyeOff } from "lucide-react";
 import { useAuth, SCHOOLS, type SchoolCode } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
+import appleTreeLogo from "@/assets/apple-tree-logo.jpg";
+import applePlayLogo from "@/assets/apple-play-logo.jpg";
+
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const SCHOOL_META: Record<SchoolCode, { logo: string; gradient: string }> = {
-  apple_tree: { logo: "/apple_tree_logo.png", gradient: "from-emerald-500 to-teal-600" },
-  apple_play: { logo: "/apple_play_logo.png", gradient: "from-rose-500 to-orange-500" },
+const SCHOOL_META: Record<SchoolCode, { logo: string }> = {
+  apple_tree: { logo: appleTreeLogo },
+  apple_play: { logo: applePlayLogo },
 };
 
 function LoginPage() {
@@ -24,6 +28,7 @@ function LoginPage() {
   const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => { if (!loading && user) navigate({ to: "/" }); }, [user, loading, navigate]);
@@ -34,17 +39,41 @@ function LoginPage() {
     setBusy(true);
     if (mode === "signin") {
       const { error } = await signIn(email, password);
-      if (error) toast.error(error); else toast.success("Welcome back");
+      if (error) {
+        toast.error(error);
+        setBusy(false);
+      } else {
+        // Sign-in succeeded. Validate that the user's registered school matches the chosen school
+        const { data: { user: authedUser } } = await supabase.auth.getUser();
+        if (authedUser) {
+          const { data: roleData } = await supabase
+            .from("user_roles")
+            .select("school")
+            .eq("user_id", authedUser.id)
+            .maybeSingle();
+
+          if (roleData && roleData.school !== school) {
+            const correctSchoolName = SCHOOLS.find(s => s.code === roleData.school)?.name ?? "the other school";
+            toast.error(`This account belongs to ${correctSchoolName}. Please select the correct school to log in.`);
+            await supabase.auth.signOut();
+            setBusy(false);
+            return;
+          }
+        }
+        toast.success("Welcome back");
+        setBusy(false);
+      }
     } else if (mode === "signup") {
       const { error } = await signUp(email, password, school);
+      setBusy(false);
       if (error) toast.error(error);
       else toast.success("Check your email to verify your account.");
     } else {
       const { error } = await resetPassword(email);
+      setBusy(false);
       if (error) toast.error(error);
       else toast.success("Password reset link sent to your email.");
     }
-    setBusy(false);
   };
 
   return (
@@ -55,35 +84,32 @@ function LoginPage() {
         {!school ? (
           <>
             <div className="mb-6 text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-primary shadow-elegant">
-                <School className="h-6 w-6 text-primary-foreground" />
+              <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl border bg-white shadow-elegant">
+                <img src={applePlayLogo} alt="School Management Logo" className="h-full w-full object-contain" />
               </div>
               <h1 className="text-2xl font-bold tracking-tight">Choose your school</h1>
               <p className="mt-1 text-sm text-muted-foreground">Each school has its own private workspace.</p>
             </div>
             <div className="grid gap-3">
-              {SCHOOLS.map(s => {
-                const logoSrc = SCHOOL_META[s.code].logo;
-                return (
-                  <button key={s.code} onClick={() => setSchool(s.code)}
-                    className="group flex items-center gap-3 rounded-xl border bg-card p-4 text-left transition hover:border-primary/50 hover:shadow-card">
-                    <div className={`flex h-11 w-11 items-center justify-center rounded-lg bg-white overflow-hidden shadow-elegant border`}>
-                      <img src={logoSrc} alt={`${s.name} Logo`} className="h-full w-full object-contain p-1" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-semibold">{s.name}</div>
-                      <div className="text-xs text-muted-foreground">Tap to continue →</div>
-                    </div>
-                  </button>
-                );
-              })}
+              {SCHOOLS.map(s => (
+                <button key={s.code} onClick={() => setSchool(s.code)}
+                  className="group flex items-center gap-3 rounded-xl border bg-card p-4 text-left transition hover:border-primary/50 hover:shadow-card">
+                  <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-lg border bg-white">
+                    <img src={SCHOOL_META[s.code].logo} alt={`${s.name} logo`} className="h-full w-full object-contain" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold">{s.name}</div>
+                    <div className="text-xs text-muted-foreground">Tap to continue →</div>
+                  </div>
+                </button>
+              ))}
             </div>
           </>
         ) : (
           <>
             <div className="mb-6 flex flex-col items-center text-center">
-              <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-white overflow-hidden shadow-elegant border`}>
-                <img src={SCHOOL_META[school].logo} alt="School Logo" className="h-full w-full object-contain p-1" />
+              <div className="mb-3 flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl border bg-white shadow-elegant">
+                <img src={SCHOOL_META[school].logo} alt="School logo" className="h-full w-full object-contain" />
               </div>
               <h1 className="text-2xl font-bold tracking-tight">{SCHOOLS.find(s => s.code === school)!.name}</h1>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -101,7 +127,25 @@ function LoginPage() {
               {mode !== "reset" && (
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
-                  <Input id="password" type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      minLength={6}
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
               )}
               <Button type="submit" disabled={busy} className="w-full bg-gradient-primary text-primary-foreground hover:opacity-95">

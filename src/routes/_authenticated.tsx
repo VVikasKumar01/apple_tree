@@ -4,6 +4,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { TopBar } from "@/components/TopBar";
 import { useAuth } from "@/lib/auth";
+import { AcademicYearProvider } from "@/lib/academic-year";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthLayout,
@@ -26,16 +27,18 @@ function AuthLayout() {
   }
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background">
-        <AppSidebar />
-        <div className="flex flex-1 flex-col">
-          <TopBar />
-          <main className="flex-1 p-6">
-            <Outlet />
-          </main>
+    <AcademicYearProvider>
+      <SidebarProvider>
+        <div className="flex min-h-screen w-full bg-background">
+          <AppSidebar />
+          <div className="flex flex-1 flex-col">
+            <TopBar />
+            <main className="flex-1 p-6">
+              <Outlet />
+            </main>
+          </div>
         </div>
-      </div>
-    </SidebarProvider>
+      </SidebarProvider>
+    </AcademicYearProvider>
   );
 }

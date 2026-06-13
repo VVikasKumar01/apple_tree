@@ -9,6 +9,9 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth, schoolName } from "@/lib/auth";
 
+import appleTreeLogo from "@/assets/apple-tree-logo.jpg";
+import applePlayLogo from "@/assets/apple-play-logo.jpg";
+
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Students", url: "/students", icon: Users },
@@ -25,14 +28,20 @@ export function AppSidebar() {
   const path = useRouterState({ select: r => r.location.pathname });
   const { signOut, user, school } = useAuth();
 
+  const logoUrl = school === "apple_tree" ? appleTreeLogo : school === "apple_play" ? applePlayLogo : null;
+
   const active = (url: string) => url === "/" ? path === "/" : path.startsWith(url);
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-primary shadow-elegant">
-            <School className="h-5 w-5 text-primary-foreground" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-white shadow-elegant">
+            {logoUrl ? (
+              <img src={logoUrl} alt="School Logo" className="h-full w-full object-contain" />
+            ) : (
+              <School className="h-5 w-5 text-sidebar-foreground" />
+            )}
           </div>
           {!collapsed && (
             <div className="overflow-hidden">

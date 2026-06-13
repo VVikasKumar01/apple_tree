@@ -10,17 +10,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { exportToExcel } from "@/lib/excel";
 import { parseDataFile, normalizeRow } from "@/lib/import";
-import { currentAcademicYear } from "@/lib/types";
 import { CLASS_OPTIONS } from "@/lib/constants";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
+import { useAcademicYear } from "@/lib/academic-year";
 
 export const Route = createFileRoute("/_authenticated/other-fees")({ component: OtherFeesPage });
 
 function OtherFeesPage() {
   const qc = useQueryClient();
   const { school } = useAuth();
-  const year = currentAcademicYear();
+  const { year } = useAcademicYear();
   const [q, setQ] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [booksFilter, setBooksFilter] = useState<string>("all");
@@ -28,10 +28,11 @@ function OtherFeesPage() {
   const importRef = useRef<HTMLInputElement>(null);
 
   const { data: rows = [] } = useQuery({
-    queryKey: ["other-fees", year],
+    queryKey: ["other-fees", year, school],
+    enabled: !!school,
     queryFn: async () => {
-      const { data: students } = await supabase.from("students").select("id,admission_number,student_name,class_grade");
-      const { data: fees } = await supabase.from("other_fees").select("*").eq("academic_year", year);
+      const { data: students } = await supabase.from("students").select("id,admission_number,student_name,class_grade").eq("academic_year", year).eq("school", school);
+      const { data: fees } = await supabase.from("other_fees").select("*").eq("academic_year", year).eq("school", school);
       const m = new Map((fees ?? []).map((f: any) => [f.student_id, f]));
       return (students ?? []).map((s: any) => ({ student: s, of: m.get(s.id) ?? null }));
     },
@@ -86,7 +87,7 @@ function OtherFeesPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-end justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Other Fees</h1>
           <p className="text-sm text-muted-foreground">Books & uniform issue tracking · {year}</p>
@@ -123,38 +124,40 @@ function OtherFeesPage() {
           </Select>
           <div className="ml-auto text-sm text-muted-foreground">{filtered.length} of {rows.length}</div>
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Adm #</TableHead><TableHead>Name</TableHead>
-              <TableHead>Books Allotted</TableHead><TableHead>Books Status</TableHead>
-              <TableHead>Uniform Size</TableHead><TableHead>Uniform Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map(({ student, of }) => (
-              <TableRow key={student.id}>
-                <TableCell className="font-mono text-xs">{student.admission_number}</TableCell>
-                <TableCell className="font-medium">{student.student_name}</TableCell>
-                <TableCell><Input defaultValue={of?.books_allotted ?? ""} onBlur={e => upsert(student.id, { books_allotted: e.target.value })} className="h-8" /></TableCell>
-                <TableCell>
-                  <Select defaultValue={of?.books_status ?? "Not Issued"} onValueChange={v => upsert(student.id, { books_status: v })}>
-                    <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="Issued">Issued</SelectItem><SelectItem value="Not Issued">Not Issued</SelectItem></SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell><Input defaultValue={of?.uniform_size ?? ""} onBlur={e => upsert(student.id, { uniform_size: e.target.value })} className="h-8 w-20" /></TableCell>
-                <TableCell>
-                  <Select defaultValue={of?.uniform_status ?? "Not Issued"} onValueChange={v => upsert(student.id, { uniform_status: v })}>
-                    <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="Issued">Issued</SelectItem><SelectItem value="Not Issued">Not Issued</SelectItem></SelectContent>
-                  </Select>
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Adm #</TableHead><TableHead>Name</TableHead>
+                <TableHead>Books Allotted</TableHead><TableHead>Books Status</TableHead>
+                <TableHead>Uniform Size</TableHead><TableHead>Uniform Status</TableHead>
               </TableRow>
-            ))}
-            {filtered.length === 0 && <TableRow><TableCell colSpan={6} className="h-24 text-center text-muted-foreground">No records match.</TableCell></TableRow>}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filtered.map(({ student, of }) => (
+                <TableRow key={student.id}>
+                  <TableCell className="font-mono text-xs">{student.admission_number}</TableCell>
+                  <TableCell className="font-medium">{student.student_name}</TableCell>
+                  <TableCell><Input defaultValue={of?.books_allotted ?? ""} onBlur={e => upsert(student.id, { books_allotted: e.target.value })} className="h-8" /></TableCell>
+                  <TableCell>
+                    <Select defaultValue={of?.books_status ?? "Not Issued"} onValueChange={v => upsert(student.id, { books_status: v })}>
+                      <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+                      <SelectContent><SelectItem value="Issued">Issued</SelectItem><SelectItem value="Not Issued">Not Issued</SelectItem></SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell><Input defaultValue={of?.uniform_size ?? ""} onBlur={e => upsert(student.id, { uniform_size: e.target.value })} className="h-8 w-20" /></TableCell>
+                  <TableCell>
+                    <Select defaultValue={of?.uniform_status ?? "Not Issued"} onValueChange={v => upsert(student.id, { uniform_status: v })}>
+                      <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+                      <SelectContent><SelectItem value="Issued">Issued</SelectItem><SelectItem value="Not Issued">Not Issued</SelectItem></SelectContent>
+                    </Select>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filtered.length === 0 && <TableRow><TableCell colSpan={6} className="h-24 text-center text-muted-foreground">No records match.</TableCell></TableRow>}
+            </TableBody>
+          </Table>
+        </div>
       </Card>
     </div>
   );

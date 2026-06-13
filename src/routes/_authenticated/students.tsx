@@ -14,29 +14,31 @@ import { exportToExcel } from "@/lib/excel";
 import { parseDataFile, normalizeRow } from "@/lib/import";
 import { toast } from "sonner";
 import type { Student } from "@/lib/types";
-import { CLASS_OPTIONS, GENDER_OPTIONS } from "@/lib/constants";
+import { CLASS_OPTIONS, GENDER_OPTIONS, ACADEMIC_YEARS } from "@/lib/constants";
 import { useAuth } from "@/lib/auth";
+import { useAcademicYear } from "@/lib/academic-year";
 
 export const Route = createFileRoute("/_authenticated/students")({ component: StudentsPage });
 
-const emptyStudent: Partial<Student> = {
-  admission_number: "", student_name: "", gender: "Male", class_grade: "Nursery", section: "A", academic_year: "2025-26",
-};
+const getEmptyStudent = (y: string): Partial<Student> => ({
+  admission_number: "", student_name: "", gender: "Male", class_grade: "Nursery", section: "A", academic_year: y,
+});
 
 function StudentsPage() {
   const qc = useQueryClient();
   const { school } = useAuth();
+  const { year, setYear } = useAcademicYear();
   const [q, setQ] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [genderFilter, setGenderFilter] = useState<string>("all");
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<Partial<Student>>(emptyStudent);
+  const [form, setForm] = useState<Partial<Student>>(() => getEmptyStudent(year));
   const importRef = useRef<HTMLInputElement>(null);
 
   const { data: students = [] } = useQuery({
-    queryKey: ["students"],
+    queryKey: ["students", year],
     queryFn: async () => {
-      const { data, error } = await supabase.from("students").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("students").select("*").eq("academic_year", year).order("created_at", { ascending: false });
       if (error) throw error;
       return data as Student[];
     },
@@ -65,8 +67,8 @@ function StudentsPage() {
       : await supabase.from("students").insert(payload);
     if (error) return toast.error(error.message);
     toast.success(form.id ? "Updated" : "Student registered");
-    setOpen(false); setForm(emptyStudent);
-    qc.invalidateQueries({ queryKey: ["students"] });
+    setOpen(false); setForm(getEmptyStudent(year));
+    qc.invalidateQueries({ queryKey: ["students", year] });
   };
 
   const remove = async (id: string) => {
@@ -74,7 +76,7 @@ function StudentsPage() {
     const { error } = await supabase.from("students").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Deleted");
-    qc.invalidateQueries({ queryKey: ["students"] });
+    qc.invalidateQueries({ queryKey: ["students", year] });
   };
 
   const handleImport = async (file: File) => {
@@ -108,11 +110,11 @@ function StudentsPage() {
       };
       const mapped = rows.map(r => normalizeRow(r, aliases)).filter(r => r.admission_number && r.student_name);
       if (!mapped.length) return toast.error("No valid rows. Need admission number and name.");
-      const payload = mapped.map(r => ({ ...r, school }));
-      const { error } = await supabase.from("students").upsert(payload as any, { onConflict: "admission_number" });
+      const payload = mapped.map(r => ({ academic_year: year, ...r, school }));
+      const { error } = await supabase.from("students").upsert(payload as any, { onConflict: "school,academic_year,admission_number" });
       if (error) return toast.error(error.message);
       toast.success(`Imported ${mapped.length} students`);
-      qc.invalidateQueries({ queryKey: ["students"] });
+      qc.invalidateQueries({ queryKey: ["students", year] });
     } catch (e: any) { toast.error(e.message ?? "Import failed"); }
   };
 
@@ -130,7 +132,7 @@ function StudentsPage() {
           <Button variant="outline" onClick={() => exportToExcel(filtered as any, "students.xlsx", "Students")}>
             <Download className="mr-2 h-4 w-4" />Export
           </Button>
-          <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setForm(emptyStudent); }}>
+          <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setForm(getEmptyStudent(year)); }}>
             <DialogTrigger asChild>
               <Button className="bg-gradient-primary text-primary-foreground"><Plus className="mr-2 h-4 w-4" />Register Student</Button>
             </DialogTrigger>
@@ -146,6 +148,12 @@ function StudentsPage() {
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <Search className="h-4 w-4 text-muted-foreground" />
           <Input placeholder="Search by name, admission #, parent…" value={q} onChange={e => setQ(e.target.value)} className="max-w-sm" />
+          <Select value={year} onValueChange={setYear}>
+            <SelectTrigger className="w-36"><SelectValue placeholder="Academic Year" /></SelectTrigger>
+            <SelectContent>
+              {ACADEMIC_YEARS.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+            </SelectContent>
+          </Select>
           <Select value={classFilter} onValueChange={setClassFilter}>
             <SelectTrigger className="w-36"><SelectValue placeholder="Class" /></SelectTrigger>
             <SelectContent>
@@ -308,7 +316,15 @@ function StudentForm({ form, setForm, onSave }: { form: Partial<Student>; setFor
             </Select>
           </div>
           <Field form={form} setForm={setForm} label="Section" k="section" />
-          <Field form={form} setForm={setForm} label="Academic Year" k="academic_year" />
+          <div className="space-y-1.5">
+            <Label className="text-xs">Academic Year*</Label>
+            <Select value={(form.academic_year as string) ?? ""} onValueChange={v => set("academic_year", v)}>
+              <SelectTrigger><SelectValue placeholder="Select year" /></SelectTrigger>
+              <SelectContent>
+                {ACADEMIC_YEARS.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           <Field form={form} setForm={setForm} label="Height (cm)" k="height_cm" type="number" />
           <Field form={form} setForm={setForm} label="Weight (kg)" k="weight_kg" type="number" />
         </div>

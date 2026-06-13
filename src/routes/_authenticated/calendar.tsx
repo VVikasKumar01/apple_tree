@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/calendar")({ component: CalendarPage });
 
@@ -22,10 +23,13 @@ function CalendarPage() {
   const { school } = useAuth();
   const [form, setForm] = useState({ title: "", event_date: "", event_type: "event", description: "" });
   const [month, setMonth] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [dialogEvent, setDialogEvent] = useState<EventRow | null>(null);
 
   const { data: events = [] } = useQuery({
-    queryKey: ["events"],
-    queryFn: async () => ((await supabase.from("calendar_events").select("*").order("event_date")).data ?? []) as EventRow[],
+    queryKey: ["events", school],
+    enabled: !!school,
+    queryFn: async () => ((await supabase.from("calendar_events").select("*").eq("school", school).order("event_date")).data ?? []) as EventRow[],
   });
 
   const modifiers = useMemo(() => {
@@ -46,13 +50,20 @@ function CalendarPage() {
   const add = async () => {
     if (!form.title || !form.event_date) return toast.error("Title and date required");
     if (!school) return toast.error("School not set on your account");
-    const { error } = await supabase.from("calendar_events").insert({ ...form, school });
+    const { data, error } = await supabase.from("calendar_events").insert({ ...form, school }).select().single();
     if (error) toast.error(error.message);
-    else { setForm({ title: "", event_date: "", event_type: "event", description: "" }); qc.invalidateQueries({ queryKey: ["events"] }); }
+    else {
+      setForm({ title: "", event_date: "", event_type: "event", description: "" });
+      qc.invalidateQueries({ queryKey: ["events"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      toast.success("Event added successfully!");
+      if (data) setDialogEvent(data as EventRow);
+    }
   };
   const del = async (id: string) => {
     await supabase.from("calendar_events").delete().eq("id", id);
     qc.invalidateQueries({ queryKey: ["events"] });
+    qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
   };
 
   const colorFor = (t: string) => t === "holiday" ? "bg-destructive/10 text-destructive" : t === "working" ? "bg-success/10 text-success" : "bg-primary/10 text-primary";
@@ -77,6 +88,19 @@ function CalendarPage() {
     const a = document.createElement("a"); a.href = url; a.download = "school-calendar.ics"; a.click(); URL.revokeObjectURL(url);
   };
 
+  const handleSelectDate = (date: Date | undefined) => {
+    setSelectedDate(date);
+    if (date) {
+      const match = events.find(e => {
+        const [y, m, day] = e.event_date.split("-").map(Number);
+        return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === day;
+      });
+      if (match) {
+        setDialogEvent(match);
+      }
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-2">
@@ -90,6 +114,8 @@ function CalendarPage() {
             mode="single"
             month={month}
             onMonthChange={setMonth}
+            selected={selectedDate}
+            onSelect={handleSelectDate}
             className="mx-auto"
             modifiers={modifiers}
             modifiersClassNames={modifiersClassNames}
@@ -137,6 +163,30 @@ function CalendarPage() {
           {events.length === 0 && <div className="py-6 text-center text-sm text-muted-foreground">No events yet.</div>}
         </div>
       </Card>
+
+      <Dialog open={!!dialogEvent} onOpenChange={(o) => !o && setDialogEvent(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${colorFor(dialogEvent?.event_type ?? "")}`}>
+                {dialogEvent?.event_type}
+              </span>
+              <span>{dialogEvent?.title}</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs font-mono pt-1">
+              Event Date: {dialogEvent?.event_date}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <div className="text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground bg-muted/30 p-3 rounded-lg border">
+              {dialogEvent?.description || "No description provided."}
+            </div>
+            <div className="flex justify-end pt-2">
+              <Button onClick={() => setDialogEvent(null)} variant="outline" size="sm">Close</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
