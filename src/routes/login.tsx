@@ -12,9 +12,9 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const SCHOOL_META: Record<SchoolCode, { icon: typeof School; gradient: string }> = {
-  apple_tree: { icon: TreeDeciduous, gradient: "from-emerald-500 to-teal-600" },
-  apple_play: { icon: Sparkles, gradient: "from-rose-500 to-orange-500" },
+const SCHOOL_META: Record<SchoolCode, { logo: string; gradient: string }> = {
+  apple_tree: { logo: "/apple_tree_logo.png", gradient: "from-emerald-500 to-teal-600" },
+  apple_play: { logo: "/apple_play_logo.png", gradient: "from-rose-500 to-orange-500" },
 };
 
 function LoginPage() {
@@ -63,12 +63,12 @@ function LoginPage() {
             </div>
             <div className="grid gap-3">
               {SCHOOLS.map(s => {
-                const Icon = SCHOOL_META[s.code].icon;
+                const logoSrc = SCHOOL_META[s.code].logo;
                 return (
                   <button key={s.code} onClick={() => setSchool(s.code)}
                     className="group flex items-center gap-3 rounded-xl border bg-card p-4 text-left transition hover:border-primary/50 hover:shadow-card">
-                    <div className={`flex h-11 w-11 items-center justify-center rounded-lg bg-gradient-to-br ${SCHOOL_META[s.code].gradient} text-white shadow-elegant`}>
-                      <Icon className="h-5 w-5" />
+                    <div className={`flex h-11 w-11 items-center justify-center rounded-lg bg-white overflow-hidden shadow-elegant border`}>
+                      <img src={logoSrc} alt={`${s.name} Logo`} className="h-full w-full object-contain p-1" />
                     </div>
                     <div className="flex-1">
                       <div className="font-semibold">{s.name}</div>
@@ -82,8 +82,8 @@ function LoginPage() {
         ) : (
           <>
             <div className="mb-6 flex flex-col items-center text-center">
-              <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${SCHOOL_META[school].gradient} shadow-elegant`}>
-                {(() => { const I = SCHOOL_META[school].icon; return <I className="h-6 w-6 text-white" />; })()}
+              <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-white overflow-hidden shadow-elegant border`}>
+                <img src={SCHOOL_META[school].logo} alt="School Logo" className="h-full w-full object-contain p-1" />
               </div>
               <h1 className="text-2xl font-bold tracking-tight">{SCHOOLS.find(s => s.code === school)!.name}</h1>
               <p className="mt-1 text-sm text-muted-foreground">
