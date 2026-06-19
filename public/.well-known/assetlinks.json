@@ -1,0 +1,11 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.vercel.apple_tree_five.twa",
+      "sha256_cert_fingerprints": [
+        "4D:2B:7B:6D:44:BB:8E:C3:3B:A5:F6:C6:40:1E:8E:D1:3D:EC:A9:98:C4:43:CD:07:B0:F3:63:09:ED:4B:D9:9E",
+        "B3:7A:41:95:1B:A2:89:E8:A5:F3:2A:AB:7A:A6:89:62:83:68:97:A4:25:16:EC:18:4C:9E:5F:F7:70:8D:96:06"
+      ]
+  }
+}]

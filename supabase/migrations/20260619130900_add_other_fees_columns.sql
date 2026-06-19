@@ -1,0 +1,11 @@
+ALTER TABLE public.other_fees ADD COLUMN IF NOT EXISTS books_payment_status text DEFAULT 'Unpaid';
+ALTER TABLE public.other_fees ADD COLUMN IF NOT EXISTS books_amount_paid numeric DEFAULT 0;
+ALTER TABLE public.other_fees ADD COLUMN IF NOT EXISTS books_payment_mode text;
+ALTER TABLE public.other_fees ADD COLUMN IF NOT EXISTS books_payment_date date;
+ALTER TABLE public.other_fees ADD COLUMN IF NOT EXISTS books_txn_id text;
+ALTER TABLE public.other_fees ADD COLUMN IF NOT EXISTS uniform_payment_status text DEFAULT 'Unpaid';
+ALTER TABLE public.other_fees ADD COLUMN IF NOT EXISTS uniform_amount_paid numeric DEFAULT 0;
+ALTER TABLE public.other_fees ADD COLUMN IF NOT EXISTS uniform_payment_mode text;
+ALTER TABLE public.other_fees ADD COLUMN IF NOT EXISTS uniform_payment_date date;
+ALTER TABLE public.other_fees ADD COLUMN IF NOT EXISTS uniform_txn_id text;
+ALTER TABLE public.other_fees ADD COLUMN IF NOT EXISTS notes text;
