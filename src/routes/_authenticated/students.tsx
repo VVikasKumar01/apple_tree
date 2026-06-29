@@ -77,6 +77,7 @@ function StudentsPage() {
     if (error) return toast.error(error.message);
     toast.success("Deleted");
     qc.invalidateQueries({ queryKey: ["students", year] });
+    qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
   };
 
   const handleImport = async (file: File) => {
