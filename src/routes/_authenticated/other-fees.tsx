@@ -88,11 +88,25 @@ function OtherFeesPage() {
         due_fee: ["due", "due fee", "due amount"],
         notes: [],
       };
+      const normalizeStatus = (v: any): string | undefined => {
+        if (!v) return undefined;
+        const s = String(v).trim().toLowerCase();
+        if (s === "issued") return "Issued";
+        if (s === "not issued" || s === "not_issued") return "Not Issued";
+        if (s === "paid") return "Paid";
+        if (s === "unpaid") return "Unpaid";
+        if (s === "partially paid" || s === "partial") return "Partially Paid";
+        return v;
+      };
       const payload: any[] = [];
       for (const r of data.map(x => normalizeRow(x, aliases))) {
         const sid = byAdm.get(String(r.admission_number).trim());
         if (!sid) continue;
         const { admission_number, ...rest } = r;
+        if (rest.books_status) rest.books_status = normalizeStatus(rest.books_status);
+        if (rest.uniform_status) rest.uniform_status = normalizeStatus(rest.uniform_status);
+        if (rest.books_payment_status) rest.books_payment_status = normalizeStatus(rest.books_payment_status);
+        if (rest.uniform_payment_status) rest.uniform_payment_status = normalizeStatus(rest.uniform_payment_status);
         payload.push({ ...rest, student_id: sid, academic_year: year, school });
       }
       if (!payload.length) return toast.error("No matching students");

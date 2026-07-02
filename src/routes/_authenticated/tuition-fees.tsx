@@ -88,7 +88,20 @@ function TuitionPage() {
         term1_fee: ["t1", "term1"], term2_fee: ["t2", "term2"], term3_fee: ["t3", "term3"],
         term1_status: [], term2_status: [], term3_status: [],
       };
-      const mapped = data.map(r => normalizeRow(r, aliases));
+      const mapped = data.map(r => {
+        const row = normalizeRow(r, aliases);
+        for (const k of ["term1_status", "term2_status", "term3_status"] as const) {
+          if (row[k]) {
+            const s = String(row[k]).trim().toLowerCase();
+            if (s === "paid" || s === "p") {
+              row[k] = "Paid";
+            } else if (s === "unpaid" || s === "u") {
+              row[k] = "Unpaid";
+            }
+          }
+        }
+        return row;
+      });
       const payload: any[] = [];
       for (const m of mapped) {
         const sid = byAdm.get(String(m.admission_number).trim());

@@ -110,7 +110,18 @@ function StudentsPage() {
         permanent_address: ["address", "permanent address", "permanent"],
         correspondence_address: ["correspondence address", "correspondence", "current address"],
       };
-      const mapped = rows.map(r => normalizeRow(r, aliases)).filter(r => r.admission_number && r.student_name);
+      const mapped = rows.map(r => {
+        const row = normalizeRow(r, aliases);
+        if (row.gender) {
+          const g = String(row.gender).trim().toLowerCase();
+          if (g === "male" || g === "m") {
+            row.gender = "Male";
+          } else if (g === "female" || g === "f") {
+            row.gender = "Female";
+          }
+        }
+        return row;
+      }).filter(r => r.admission_number && r.student_name);
       if (!mapped.length) return toast.error("No valid rows. Need admission number and name.");
       const payload = mapped.map(r => ({ academic_year: year, ...r, school }));
       const { error } = await supabase.from("students").upsert(payload as any, { onConflict: "school,academic_year,admission_number" });
