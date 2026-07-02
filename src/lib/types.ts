@@ -31,6 +31,8 @@ export interface Student {
   permanent_address: string | null;
   correspondence_address: string | null;
   photo_url: string | null;
+  school?: string | null;
+  created_by?: string | null;
   created_at: string;
 }
 

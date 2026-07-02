@@ -39,8 +39,8 @@ function OtherFeesPage() {
     queryKey: ["other-fees", year, school],
     enabled: !!school,
     queryFn: async () => {
-      const { data: students } = await supabase.from("students").select("id,admission_number,student_name,class_grade").eq("academic_year", year).eq("school", school);
-      const { data: fees } = await supabase.from("other_fees").select("*").eq("academic_year", year).eq("school", school);
+      const { data: students } = await supabase.from("students").select("id,admission_number,student_name,class_grade").eq("academic_year", year).eq("school", school!);
+      const { data: fees } = await supabase.from("other_fees").select("*").eq("academic_year", year).eq("school", school!);
       const m = new Map((fees ?? []).map((f: any) => [f.student_id, f]));
       return (students ?? []).map((s: any) => ({ student: s, of: m.get(s.id) ?? null }));
     },
@@ -77,7 +77,7 @@ function OtherFeesPage() {
     if (!school) return toast.error("School not set on your account");
     try {
       const data = await parseDataFile(file);
-      const { data: students } = await supabase.from("students").select("id,admission_number");
+      const { data: students } = await supabase.from("students").select("id,admission_number").eq("academic_year", year).eq("school", school!);
       const byAdm = new Map((students ?? []).map((s: any) => [String(s.admission_number).trim(), s.id]));
       const aliases: Record<string, string[]> = {
         admission_number: ["admission", "adm no", "adm#"],

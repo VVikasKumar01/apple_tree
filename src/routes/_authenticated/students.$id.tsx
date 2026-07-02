@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import type { Student } from "@/lib/types";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated/students/$id")({
   component: StudentDashboard,
@@ -15,12 +16,14 @@ export const Route = createFileRoute("/_authenticated/students/$id")({
 function StudentDashboard() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const { school } = useAuth();
 
   const { data } = useQuery({
-    queryKey: ["student-full-history", id],
+    queryKey: ["student-full-history", id, school],
+    enabled: !!school,
     queryFn: async () => {
       // 1. Fetch current student record
-      const sRes = await supabase.from("students").select("*").eq("id", id).single();
+      const sRes = await supabase.from("students").select("*").eq("id", id).eq("school", school!).single();
       const s = sRes.data as Student | null;
       if (!s) return null;
 
@@ -30,7 +33,7 @@ function StudentDashboard() {
           .from("students")
           .select("id, academic_year, class_grade")
           .eq("admission_number", s.admission_number)
-          .eq("school", s.school)
+          .eq("school", school!)
           .order("academic_year", { ascending: false }),
         supabase.from("academic_marks").select("*, subjects(name)").eq("student_id", id),
         supabase.from("attendance_summary").select("*").eq("student_id", id).maybeSingle(),

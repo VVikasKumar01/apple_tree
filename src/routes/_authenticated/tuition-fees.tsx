@@ -38,8 +38,8 @@ function TuitionPage() {
     queryKey: ["tuition", year, school],
     enabled: !!school,
     queryFn: async () => {
-      const { data: students } = await supabase.from("students").select("id,admission_number,student_name,class_grade,section,gender").eq("academic_year", year).eq("school", school);
-      const { data: fees } = await supabase.from("tuition_fees").select("*").eq("academic_year", year).eq("school", school);
+      const { data: students } = await supabase.from("students").select("id,admission_number,student_name,class_grade,section,gender").eq("academic_year", year).eq("school", school!);
+      const { data: fees } = await supabase.from("tuition_fees").select("*").eq("academic_year", year).eq("school", school!);
       const fmap = new Map((fees ?? []).map((f: any) => [f.student_id, f]));
       return (students ?? []).map((s: any) => ({ student: s, fee: fmap.get(s.id) ?? null }));
     },
@@ -79,7 +79,7 @@ function TuitionPage() {
     if (!school) return toast.error("School not set on your account");
     try {
       const data = await parseDataFile(file);
-      const { data: students } = await supabase.from("students").select("id,admission_number");
+      const { data: students } = await supabase.from("students").select("id,admission_number").eq("academic_year", year).eq("school", school!);
       const byAdm = new Map((students ?? []).map((s: any) => [String(s.admission_number).trim(), s.id]));
       const aliases: Record<string, string[]> = {
         admission_number: ["admission", "adm no", "adm#", "admission#"],

@@ -29,7 +29,7 @@ function CalendarPage() {
   const { data: events = [] } = useQuery({
     queryKey: ["events", school],
     enabled: !!school,
-    queryFn: async () => ((await supabase.from("calendar_events").select("*").eq("school", school).order("event_date")).data ?? []) as EventRow[],
+    queryFn: async () => ((await supabase.from("calendar_events").select("*").eq("school", school!).order("event_date")).data ?? []) as EventRow[],
   });
 
   const modifiers = useMemo(() => {

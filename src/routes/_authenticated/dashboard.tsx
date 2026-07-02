@@ -31,9 +31,9 @@ function Dashboard() {
       const startDate = `${startY}-04-01`;
       const endDate = `${endY}-03-31`;
       const [s, t, e] = await Promise.all([
-        supabase.from("students").select("id", { count: "exact", head: true }).eq("academic_year", year).eq("school", school),
-        supabase.from("tuition_fees").select("term1_fee,term2_fee,term3_fee,term1_status,term2_status,term3_status,finalized_fee").eq("academic_year", year).eq("school", school),
-        supabase.from("calendar_events").select("*").eq("school", school).gte("event_date", startDate).lte("event_date", endDate).order("event_date", { ascending: true }),
+        supabase.from("students").select("id", { count: "exact", head: true }).eq("academic_year", year).eq("school", school!),
+        supabase.from("tuition_fees").select("term1_fee,term2_fee,term3_fee,term1_status,term2_status,term3_status,finalized_fee").eq("academic_year", year).eq("school", school!),
+        supabase.from("calendar_events").select("*").eq("school", school!).gte("event_date", startDate).lte("event_date", endDate).order("event_date", { ascending: true }),
       ]);
       let pending = 0, collected = 0;
       for (const r of t.data ?? []) {

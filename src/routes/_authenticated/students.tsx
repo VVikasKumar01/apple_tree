@@ -36,9 +36,10 @@ function StudentsPage() {
   const importRef = useRef<HTMLInputElement>(null);
 
   const { data: students = [] } = useQuery({
-    queryKey: ["students", year],
+    queryKey: ["students", year, school],
+    enabled: !!school,
     queryFn: async () => {
-      const { data, error } = await supabase.from("students").select("*").eq("academic_year", year).order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("students").select("*").eq("academic_year", year).eq("school", school!).order("created_at", { ascending: false });
       if (error) throw error;
       return data as Student[];
     },

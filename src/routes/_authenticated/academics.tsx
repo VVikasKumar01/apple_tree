@@ -50,7 +50,7 @@ function useStudents(year: string) {
   return useQuery({
     queryKey: ["students-list-full", year, school],
     enabled: !!school,
-    queryFn: async () => (await supabase.from("students").select("*").eq("academic_year", year).eq("school", school).order("student_name")).data ?? [],
+    queryFn: async () => (await supabase.from("students").select("*").eq("academic_year", year).eq("school", school!).order("student_name")).data ?? [],
   });
 }
 
@@ -248,8 +248,8 @@ function AttendanceTab({ year }: { year: string }) {
     queryKey: ["attendance", year, school],
     enabled: !!school,
     queryFn: async () => {
-      const { data: s } = await supabase.from("students").select("id,admission_number,student_name,class_grade").eq("academic_year", year).eq("school", school);
-      const { data: a } = await supabase.from("attendance_summary").select("*").eq("academic_year", year).eq("school", school);
+      const { data: s } = await supabase.from("students").select("id,admission_number,student_name,class_grade").eq("academic_year", year).eq("school", school!);
+      const { data: a } = await supabase.from("attendance_summary").select("*").eq("academic_year", year).eq("school", school!);
       const m = new Map((a ?? []).map((x: any) => [x.student_id, x]));
       return (s ?? []).map(st => ({ student: st, att: m.get(st.id) }));
     },
@@ -470,7 +470,7 @@ function ReportCardTab({ year }: { year: string }) {
     queryFn: async () => (await supabase.from("app_settings").select("*")).data ?? [],
   });
   const gradingScale = useMemo(() => {
-    return settings?.find((s: any) => s.key === "grading_scale")?.value || DEFAULT_GRADING_SCALE;
+    return (settings?.find((s: any) => s.key === "grading_scale")?.value || DEFAULT_GRADING_SCALE) as { minPercent: number; grade: string }[];
   }, [settings]);
 
   const { data: marks = [] } = useQuery({
