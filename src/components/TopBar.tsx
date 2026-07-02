@@ -105,7 +105,7 @@ export function TopBar() {
                       <Link to="/students/$id" params={{ id: s.id }} onClick={() => setOpen(false)} className="flex flex-col items-start gap-0.5">
                         <span className="font-medium">{s.student_name}</span>
                         <span className="text-xs text-muted-foreground">
-                          Adm #{s.admission_number} · {s.class_grade} {s.section ?? ""}
+                          Adm {s.admission_number} · {s.class_grade} {s.section ?? ""}
                         </span>
                       </Link>
                     </CommandItem>

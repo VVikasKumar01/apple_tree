@@ -138,7 +138,7 @@ function MarksTab({ year }: { year: string }) {
     <Card className="p-4 space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <Search className="h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search student name / admission #" value={q} onChange={e => setQ(e.target.value)} className="max-w-xs" />
+        <Input placeholder="Search student name / admission" value={q} onChange={e => setQ(e.target.value)} className="max-w-xs" />
         <Select value={classFilter} onValueChange={v => { setClassFilter(v); setStudentId(""); }}>
           <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="all">All classes</SelectItem>{CLASS_OPTIONS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
@@ -200,7 +200,7 @@ function MarksTab({ year }: { year: string }) {
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold truncate text-base">{selectedStudent?.student_name}</div>
                     <div className="text-xs text-muted-foreground truncate">
-                      Adm #{selectedStudent?.admission_number} · {selectedStudent?.class_grade} {selectedStudent?.section ?? ""}
+                      Adm {selectedStudent?.admission_number} · {selectedStudent?.class_grade} {selectedStudent?.section ?? ""}
                     </div>
                   </div>
                 </div>
@@ -277,7 +277,7 @@ function AttendanceTab({ year }: { year: string }) {
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
           <Search className="h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search by name or admission #" value={q} onChange={e => setQ(e.target.value)} className="max-w-xs" />
+          <Input placeholder="Search by name or admission" value={q} onChange={e => setQ(e.target.value)} className="max-w-xs" />
         </div>
 
         {/* Grade filter pills */}
@@ -313,7 +313,7 @@ function AttendanceTab({ year }: { year: string }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Adm #</TableHead>
+              <TableHead>Adm</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Grade</TableHead>
               <TableHead>Working Days</TableHead>
@@ -492,7 +492,7 @@ function ReportCardTab({ year }: { year: string }) {
     <Card className="p-4 space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <Search className="h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search name / admission #" value={q} onChange={e => setQ(e.target.value)} className="max-w-xs" />
+        <Input placeholder="Search name / admission" value={q} onChange={e => setQ(e.target.value)} className="max-w-xs" />
         <Select value={classFilter} onValueChange={setClassFilter}>
           <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="all">All classes</SelectItem>{CLASS_OPTIONS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
@@ -527,7 +527,7 @@ function ReportCardTab({ year }: { year: string }) {
           {student ? (
             <>
               <div className="text-lg font-semibold">{student.student_name}</div>
-              <div className="text-muted-foreground">Adm #{student.admission_number} · {student.class_grade} {student.section}</div>
+              <div className="text-muted-foreground">Adm {student.admission_number} · {student.class_grade} {student.section}</div>
               <div className="mt-2">Father: <b>{student.father_name ?? "—"}</b> · Mother: <b>{student.mother_name ?? "—"}</b></div>
               <div className="mt-1 text-xs text-muted-foreground">Click <b>Preview / Print</b> to open the report card.</div>
             </>
@@ -691,7 +691,7 @@ function ReportCard({ student, marks, att, year, schoolLabel, schoolCode, termFi
 
         <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
           <div><span className="text-gray-500">Name:</span> <b>{student.student_name}</b></div>
-          <div><span className="text-gray-500">Admission #:</span> <b>{student.admission_number}</b></div>
+          <div><span className="text-gray-500">Admission:</span> <b>{student.admission_number}</b></div>
           <div><span className="text-gray-500">Class:</span> <b>{student.class_grade} {student.section}</b></div>
           <div><span className="text-gray-500">Gender:</span> <b>{student.gender}</b></div>
           <div><span className="text-gray-500">Father:</span> <b>{student.father_name ?? "—"}</b></div>

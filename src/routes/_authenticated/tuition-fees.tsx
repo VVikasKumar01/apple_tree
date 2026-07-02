@@ -96,7 +96,7 @@ function TuitionPage() {
         const { admission_number, ...rest } = m;
         payload.push({ ...rest, student_id: sid, academic_year: year, school });
       }
-      if (!payload.length) return toast.error("No matching students by admission #");
+      if (!payload.length) return toast.error("No matching students by admission");
       const { error } = await supabase.from("tuition_fees").upsert(payload, { onConflict: "student_id,academic_year" });
       if (error) return toast.error(error.message);
       toast.success(`Imported ${payload.length} rows`);
@@ -105,7 +105,7 @@ function TuitionPage() {
   };
 
   const exportRows = filtered.map(r => ({
-    "Admission #": r.student.admission_number, Name: r.student.student_name, Class: r.student.class_grade,
+    "Admission": r.student.admission_number, Name: r.student.student_name, Class: r.student.class_grade,
     "Actual Fee": r.actual, "Finalized Fee": r.finalized, Paid: r.paid, Pending: r.finalized - r.paid, Status: r.status,
   }));
 
@@ -131,7 +131,7 @@ function TuitionPage() {
       <Card className="p-4 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <Search className="h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search by name or admission #" value={q} onChange={e => setQ(e.target.value)} className="max-w-xs" />
+          <Input placeholder="Search by name or admission" value={q} onChange={e => setQ(e.target.value)} className="max-w-xs" />
           <Select value={classFilter} onValueChange={setClassFilter}>
             <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="all">All classes</SelectItem>{CLASS_OPTIONS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
@@ -156,7 +156,7 @@ function TuitionPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Adm #</TableHead><TableHead>Name</TableHead><TableHead>Class</TableHead>
+                <TableHead>Adm</TableHead><TableHead>Name</TableHead><TableHead>Class</TableHead>
                 <TableHead className="text-right">Actual Fee</TableHead>
                 <TableHead className="text-right">Finalized Fee</TableHead>
                 <TableHead className="text-right">Paid</TableHead>

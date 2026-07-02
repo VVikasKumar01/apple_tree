@@ -123,7 +123,7 @@ function OtherFeesPage() {
           <Button variant="outline" onClick={() => importRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Import</Button>
           <ExportButton
             data={() => filtered.map(r => ({
-              "Admission #": r.student.admission_number,
+              "Admission": r.student.admission_number,
               Name: r.student.student_name,
               Class: r.student.class_grade,
               "Books Allotted": r.of?.books_allotted || "",
@@ -149,7 +149,7 @@ function OtherFeesPage() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search by name or admission #" value={q} onChange={e => setQ(e.target.value)} className="w-[250px] pl-8" />
+            <Input placeholder="Search by name or admission" value={q} onChange={e => setQ(e.target.value)} className="w-[250px] pl-8" />
           </div>
           <Select value={classFilter} onValueChange={setClassFilter}>
             <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
@@ -177,7 +177,7 @@ function OtherFeesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Adm #</TableHead><TableHead>Name</TableHead>
+                <TableHead>Adm</TableHead><TableHead>Name</TableHead>
                 <TableHead>Books Allotted</TableHead>
                 <TableHead>Books Fee (Actual/Paid/Pending)</TableHead>
                 <TableHead>Books Status</TableHead>

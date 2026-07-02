@@ -54,7 +54,7 @@ function StudentsPage() {
   });
 
   const save = async () => {
-    if (!form.admission_number || !form.student_name) return toast.error("Admission # and name are required");
+    if (!form.admission_number || !form.student_name) return toast.error("Admission and name are required");
     if (!school) return toast.error("School not set on your account");
     const digits = (v: any) => String(v ?? "").replace(/\D/g, "");
     for (const [label, v] of [["Student Aadhaar", form.student_aadhaar], ["Father Aadhaar", form.father_aadhaar], ["Mother Aadhaar", form.mother_aadhaar]] as [string, any][])
@@ -133,7 +133,7 @@ function StudentsPage() {
           <Button variant="outline" onClick={() => importRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Import</Button>
           <ExportButton
             data={() => filtered.map(s => ({
-              "Admission #": s.admission_number,
+              "Admission": s.admission_number,
               "Name": s.student_name,
               "Class": s.class_grade,
               "Section": s.section || "",
@@ -167,7 +167,7 @@ function StudentsPage() {
       <Card className="p-4">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <Search className="h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search by name, admission #, parent…" value={q} onChange={e => setQ(e.target.value)} className="max-w-sm" />
+          <Input placeholder="Search by name, admission, parent…" value={q} onChange={e => setQ(e.target.value)} className="max-w-sm" />
           <Select value={year} onValueChange={setYear}>
             <SelectTrigger className="w-36"><SelectValue placeholder="Academic Year" /></SelectTrigger>
             <SelectContent>
@@ -195,7 +195,7 @@ function StudentsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Photo</TableHead>
-                <TableHead>Admission #</TableHead>
+                <TableHead>Admission</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Class</TableHead>
                 <TableHead>Gender</TableHead>
