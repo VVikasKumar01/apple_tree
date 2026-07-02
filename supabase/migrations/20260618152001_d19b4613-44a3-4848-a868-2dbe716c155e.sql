@@ -1,0 +1,1 @@
+ALTER TABLE public.other_fees ADD COLUMN due_fee NUMERIC;
