@@ -64,9 +64,14 @@ function MarksTab({ year }: { year: string }) {
   const importRef = useRef<HTMLInputElement>(null);
 
   const { data: students = [] } = useStudents(year);
+  const selectedStudent: any = (students as any[]).find(s => s.id === studentId);
+
   const { data: subjects = [] } = useQuery({
-    queryKey: ["subjects"],
-    queryFn: async () => (await supabase.from("subjects").select("*").order("name")).data ?? [],
+    queryKey: ["subjects", selectedStudent?.class_grade ?? null],
+    queryFn: async () => {
+      if (!selectedStudent?.class_grade) return [];
+      return (await supabase.from("subjects").select("*").eq("class_grade", selectedStudent.class_grade).order("name")).data ?? [];
+    },
   });
   const { data: marks = [] } = useQuery({
     queryKey: ["marks", studentId, year], enabled: !!studentId,
@@ -84,8 +89,6 @@ function MarksTab({ year }: { year: string }) {
   if (studentId && !filteredStudents.some((s: any) => s.id === studentId)) {
     setTimeout(() => setStudentId(""), 0);
   }
-
-  const selectedStudent: any = (students as any[]).find(s => s.id === studentId);
 
   const setMark = async (subject_id: string, patch: any) => {
     if (!school) return toast.error("School not set on your account");
@@ -239,18 +242,25 @@ function AttendanceTab({ year }: { year: string }) {
   const qc = useQueryClient();
   const { school } = useAuth();
   const [q, setQ] = useState("");
+  const [gradeFilter, setGradeFilter] = useState<string>("all");
+
   const { data: rows = [] } = useQuery({
     queryKey: ["attendance", year, school],
     enabled: !!school,
     queryFn: async () => {
-      const { data: s } = await supabase.from("students").select("id,admission_number,student_name").eq("academic_year", year).eq("school", school);
+      const { data: s } = await supabase.from("students").select("id,admission_number,student_name,class_grade").eq("academic_year", year).eq("school", school);
       const { data: a } = await supabase.from("attendance_summary").select("*").eq("academic_year", year).eq("school", school);
       const m = new Map((a ?? []).map((x: any) => [x.student_id, x]));
       return (s ?? []).map(st => ({ student: st, att: m.get(st.id) }));
     },
   });
-  const filtered = rows.filter(({ student }: any) =>
-    !q || `${student.admission_number} ${student.student_name}`.toLowerCase().includes(q.toLowerCase()));
+
+  const filtered = rows.filter(({ student }: any) => {
+    if (gradeFilter !== "all" && student.class_grade !== gradeFilter) return false;
+    if (q && !`${student.admission_number} ${student.student_name}`.toLowerCase().includes(q.toLowerCase())) return false;
+    return true;
+  });
+
   const save = async (student_id: string, patch: any) => {
     if (!school) return toast.error("School not set on your account");
     const { error } = await supabase.from("attendance_summary").upsert(
@@ -260,26 +270,83 @@ function AttendanceTab({ year }: { year: string }) {
     if (error) toast.error(error.message);
     else qc.invalidateQueries({ queryKey: ["attendance", year] });
   };
+
   return (
     <Card className="p-4 space-y-3">
-      <div className="flex items-center gap-2">
-        <Search className="h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search by name or admission #" value={q} onChange={e => setQ(e.target.value)} className="max-w-xs" />
+      {/* Filters row */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search by name or admission #" value={q} onChange={e => setQ(e.target.value)} className="max-w-xs" />
+        </div>
+
+        {/* Grade filter pills */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground">Grade:</span>
+          <button
+            onClick={() => setGradeFilter("all")}
+            className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+              gradeFilter === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-muted/30 hover:bg-muted/60"
+            }`}
+          >
+            All
+          </button>
+          {CLASS_OPTIONS.map(grade => (
+            <button
+              key={grade}
+              onClick={() => setGradeFilter(grade)}
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                gradeFilter === grade ? "bg-primary text-primary-foreground border-primary" : "bg-muted/30 hover:bg-muted/60"
+              }`}
+            >
+              {grade}
+            </button>
+          ))}
+        </div>
+
+        <span className="text-xs text-muted-foreground ml-auto">
+          {filtered.length} student{filtered.length !== 1 ? "s" : ""}
+        </span>
       </div>
+
       <div className="overflow-x-auto">
         <Table>
-          <TableHeader><TableRow><TableHead>Adm #</TableHead><TableHead>Name</TableHead><TableHead>Working Days</TableHead><TableHead>Present</TableHead><TableHead>%</TableHead></TableRow></TableHeader>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Adm #</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Grade</TableHead>
+              <TableHead>Working Days</TableHead>
+              <TableHead>Present</TableHead>
+              <TableHead>%</TableHead>
+            </TableRow>
+          </TableHeader>
           <TableBody>
-            {filtered.map(({ student, att }: any) => {
+            {filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-6">
+                  No students found{gradeFilter !== "all" ? ` for ${gradeFilter}` : ""}.
+                </TableCell>
+              </TableRow>
+            ) : filtered.map(({ student, att }: any) => {
               const tot = att?.total_working_days ?? 0, p = att?.days_present ?? 0;
               const pct = tot ? Math.round((p / tot) * 100) : 0;
               return (
                 <TableRow key={student.id}>
                   <TableCell className="font-mono text-xs">{student.admission_number}</TableCell>
                   <TableCell className="font-medium">{student.student_name}</TableCell>
+                  <TableCell>
+                    <span className="rounded-full bg-muted/40 border px-2 py-0.5 text-xs font-medium">
+                      {student.class_grade ?? "—"}
+                    </span>
+                  </TableCell>
                   <TableCell><Input type="number" defaultValue={tot} className="h-8 w-24" onBlur={e => save(student.id, { total_working_days: Number(e.target.value || 0), days_present: p })} /></TableCell>
                   <TableCell><Input type="number" defaultValue={p} className="h-8 w-24" onBlur={e => save(student.id, { total_working_days: tot, days_present: Number(e.target.value || 0) })} /></TableCell>
-                  <TableCell><span className="font-semibold">{pct}%</span></TableCell>
+                  <TableCell>
+                    <span className={`font-semibold ${pct >= 75 ? "text-green-600" : pct >= 50 ? "text-amber-500" : "text-red-500"}`}>
+                      {pct}%
+                    </span>
+                  </TableCell>
                 </TableRow>
               );
             })}
@@ -290,35 +357,100 @@ function AttendanceTab({ year }: { year: string }) {
   );
 }
 
+
 function SubjectsTab() {
   const qc = useQueryClient();
+  const [selectedGrade, setSelectedGrade] = useState<string>(CLASS_OPTIONS[0]);
   const [name, setName] = useState("");
+
   const { data: subjects = [] } = useQuery({
-    queryKey: ["subjects"],
-    queryFn: async () => (await supabase.from("subjects").select("*").order("name")).data ?? [],
+    queryKey: ["subjects", selectedGrade],
+    queryFn: async () =>
+      (await supabase.from("subjects").select("*").eq("class_grade", selectedGrade).order("name")).data ?? [],
   });
+
   const add = async () => {
     if (!name.trim()) return;
-    const { error } = await supabase.from("subjects").insert({ name: name.trim() });
-    if (error) toast.error(error.message); else { setName(""); qc.invalidateQueries({ queryKey: ["subjects"] }); }
+    const { error } = await supabase
+      .from("subjects")
+      .insert({ name: name.trim(), class_grade: selectedGrade });
+    if (error) toast.error(error.message);
+    else {
+      setName("");
+      qc.invalidateQueries({ queryKey: ["subjects", selectedGrade] });
+    }
   };
+
   const del = async (id: string) => {
     const { error } = await supabase.from("subjects").delete().eq("id", id);
-    if (error) toast.error(error.message); else qc.invalidateQueries({ queryKey: ["subjects"] });
+    if (error) toast.error(error.message);
+    else qc.invalidateQueries({ queryKey: ["subjects", selectedGrade] });
   };
+
   return (
-    <Card className="p-4 space-y-3">
-      <div className="flex gap-2">
-        <Input placeholder="New subject…" value={name} onChange={e => setName(e.target.value)} className="max-w-xs" />
-        <Button onClick={add} className="bg-gradient-primary text-primary-foreground"><Plus className="mr-2 h-4 w-4" />Add</Button>
+    <Card className="p-4 space-y-4">
+      {/* Grade selector */}
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-muted-foreground">Select Grade</p>
+        <div className="flex gap-2 flex-wrap">
+          {CLASS_OPTIONS.map(grade => (
+            <button
+              key={grade}
+              onClick={() => { setSelectedGrade(grade); setName(""); }}
+              className={`rounded-full border px-4 py-1 text-sm font-medium transition-colors ${
+                selectedGrade === grade
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-muted/30 hover:bg-muted/60"
+              }`}
+            >
+              {grade}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {(subjects as any[]).map(s => (
-          <div key={s.id} className="flex items-center gap-2 rounded-full border bg-muted/30 px-3 py-1 text-sm">
-            {s.name}
-            <button onClick={() => del(s.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3 w-3" /></button>
+
+      {/* Add subject row */}
+      <div className="flex gap-2 items-center">
+        <Input
+          placeholder={`New subject for ${selectedGrade}…`}
+          value={name}
+          onChange={e => setName(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && add()}
+          className="max-w-xs"
+        />
+        <Button onClick={add} className="bg-gradient-primary text-primary-foreground">
+          <Plus className="mr-2 h-4 w-4" />Add
+        </Button>
+      </div>
+
+      {/* Subject chips */}
+      <div>
+        <p className="mb-2 text-xs font-medium text-muted-foreground">
+          {(subjects as any[]).length} subject{(subjects as any[]).length !== 1 ? "s" : ""} for {selectedGrade}
+        </p>
+        {(subjects as any[]).length === 0 ? (
+          <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+            No subjects added for {selectedGrade} yet. Use the input above to add one.
           </div>
-        ))}
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {(subjects as any[]).map(s => (
+              <div
+                key={s.id}
+                className="flex items-center gap-2 rounded-full border bg-muted/30 px-3 py-1 text-sm"
+              >
+                {s.name}
+                <button
+                  onClick={() => del(s.id)}
+                  className="text-muted-foreground hover:text-destructive"
+                  title={`Remove ${s.name} from ${selectedGrade}`}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </Card>
   );
